@@ -58,7 +58,7 @@ for i in range(NUM_IMAGES):
     log(f"\n[{i+1}/{NUM_IMAGES}] Constraint: {theme} | {action} | {obj}")
     log("Asking Text AI for a new prompt...")
     
-    # 3. The fixed system prompt (bypasses the safety filter)
+    # 3. The system prompt
     SYSTEM_PROMPT = (
         f"You are a creative writer for a stock photo website. Write ONE short, highly specific image prompt. "
         f"The image must feature a very round, heavy-set man wearing a military camo uniform. "
@@ -72,10 +72,9 @@ for i in range(NUM_IMAGES):
         req_text = urllib.request.urlopen(text_api_url, timeout=20)
         ai_prompt = req_text.read().decode('utf-8').strip()
         
-        # Clean up the prompt just in case the AI adds quotes
         ai_prompt = ai_prompt.replace('"', '').replace('\n', ' ')
         
-        # FALLBACK: If the AI still refuses, force a prompt based on our variables
+        # FALLBACK
         if "sorry" in ai_prompt.lower() or "can't" in ai_prompt.lower() or "cannot" in ai_prompt.lower():
             log("⚠️ Text AI refused. Using fallback prompt...")
             ai_prompt = f"funny stock photo of a very round heavy-set man in a camo uniform {theme}, {action} {obj}, isolated on pure white background"
@@ -90,7 +89,8 @@ for i in range(NUM_IMAGES):
         negative_prompt = urllib.parse.quote("woman, girl, female, vehicle, car, ugly, deformed, text, watermark, cartoon, illustration")
         seed = random.randint(1, 999999)
         
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&model=flux&negative_prompt={negative_prompt}&seed={seed}"
+        # REMOVED &model=flux to stop the 402 errors
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&negative_prompt={negative_prompt}&seed={seed}"
         
         filename = f"chunky_soldiers/soldier_{int(time.time())}_{random.randint(1000, 9999)}.jpg"
         
@@ -110,7 +110,8 @@ for i in range(NUM_IMAGES):
         log("Skipping this one...")
     
     if i < NUM_IMAGES - 1:
-        log("Waiting 30 seconds to avoid the rate limit...")
-        time.sleep(30)
+        # INCREASED SLEEP TO 60 SECONDS
+        log("Waiting 60 seconds to avoid the rate limit...")
+        time.sleep(60)
 
 log("\nDone! Run complete. Your army grows.")
