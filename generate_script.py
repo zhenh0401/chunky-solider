@@ -9,39 +9,11 @@ import json
 os.makedirs("chunky_soldiers", exist_ok=True)
 TRACKER_FILE = "chunky_soldiers/generated_prompts.json"
 
-#  master list of prompts
-base_prompts = [
-    "funny stock photo of an extremely obese fat man in a tight green camo military uniform, hands up, isolated on white background",
-    "obese fat male military general in camo uniform eating a giant donut, isolated on white background, stock photo",
-    "overweight fat male soldier trying to do a push up, exhausted, wearing tight camo uniform, white background",
-    "extremely overweight fat male soldier trying to fit into a tiny military jeep, camo, isolated on white background",
-    "funny stock photo of a fat male soldier stuck crawling under barbed wire, camo uniform, isolated on white background",
-    "chunky fat male soldier in tactical gear with camo helmet, surrendering, isolated on solid white background",
-    "obese fat army man running away from a tiny explosion, funny stock photo, white background",
-    "fat male soldier stuck in a military tank hatch, camo uniform, absurd, white background",
-    "fat male soldier saluting very seriously, tight camo uniform, isolated on white background",
-    "chunky fat male soldier holding a tiny rifle, looking confused, camo, white background",
-    "obese fat male soldier doing jumping jacks, camo uniform, funny stock photo, white background",
-    "fat male soldier eating a giant sandwich in a trench, camo, stock photo, white background",
-    "fat male army recruit crying during basic training, camo uniform, isolated on white background",
-    "overweight fat male soldier trying to climb over a small wall, stuck, camo, white background",
-    "extremely round fat male soldier in full camo gear, standing proudly, isolated on white background",
-    # Extra prompts to keep the army growing
-    "fat male soldier tangled in a parachute on the ground, camo uniform, funny, white background",
-    "overweight male soldier stuck in a narrow doorway, wearing camo, funny stock photo",
-    "fat male soldier trying to eat an MRE military ration, spilling it everywhere, white background",
-    "chunky male soldier hiding behind a tiny bush, camo uniform, absurd, white background",
-    "obese male soldier trying to put on a tiny military helmet, too small, white background"
-]
-
-# Shuffle prompts to keep it random
-random.shuffle(base_prompts)
-
 def log(message):
     print(message)
     sys.stdout.flush()
 
-# 1. Load already generated prompts
+# 1. Load history
 generated_history = []
 if os.path.exists(TRACKER_FILE):
     try:
@@ -50,45 +22,86 @@ if os.path.exists(TRACKER_FILE):
     except:
         generated_history = []
 
-# 2. Filter out prompts we've already done
-new_prompts = [p for p in base_prompts if p not in generated_history]
+# 2. Random variables to force the AI to be creative
+themes = [
+    "doing office paperwork", "in a wild west saloon", "in outer space", 
+    "at a fancy restaurant", "playing a sport", "in a horror movie", 
+    "at the beach", "doing extreme sports", "in a fantasy castle", 
+    "in a fast food drive-thru", "at a fancy wedding", "in a zoo",
+    "fighting a boss in a video game", "in a yoga class"
+]
 
-if not new_prompts:
-    log("All prompts have been generated already! Add more prompts to the script if you want new ones.")
-    sys.exit(0)
+actions = [
+    "squeezing into", "falling off", "eating", "hugging", "running away from", 
+    "hiding inside", "arguing with", "riding", "tangled in", "lifting", 
+    "stuck under", "staring confused at"
+]
 
-log(f"Starting generation of {len(new_prompts)} NEW images. Do not close this window!")
+objects = [
+    "a tiny shopping cart", "a giant rubber duck", "a very small bicycle", 
+    "a massive hamburger", "a fragile antique chair", "a tiny clown car", 
+    "a giant birthday cake", "a very angry goose", "a piece of gym equipment",
+    "a highly classified military briefcase", "a children's playground slide"
+]
 
-for i, prompt in enumerate(new_prompts):
-    encoded_prompt = urllib.parse.quote(prompt)
+NUM_IMAGES = 10 
+log(f"Starting generation of {NUM_IMAGES} AI-generated images...")
+
+for i in range(NUM_IMAGES):
+    # Pick random constraints
+    theme = random.choice(themes)
+    action = random.choice(actions)
+    obj = random.choice(objects)
     
-    # Negative prompt bans females and vehicles. Random seed stops duplicates.
-    negative_prompt = urllib.parse.quote("woman, girl, female, vehicle, car, jeep, duplicate, ugly, deformed")
-    seed = random.randint(1, 999999)
+    log(f"\n[{i+1}/{NUM_IMAGES}] Constraint: {theme} | {action} | {obj}")
+    log("Asking Text AI for a new prompt...")
     
-    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&model=flux&negative_prompt={negative_prompt}&seed={seed}"
-    
-    filename = f"chunky_soldiers/soldier_{int(time.time())}_{random.randint(1000, 9999)}.jpg"
-    
-    log(f"[{i+1}/{len(new_prompts)}] Fetching image...")
+    # 3. The chaotic system prompt
+    SYSTEM_PROMPT = (
+        f"You are a hilarious meme generator. Write ONE short, highly specific image prompt. "
+        f"The image must feature an extremely obese fat man in a military camo uniform. "
+        f"He must be {theme}, specifically {action} {obj}. "
+        f"It must be a funny stock photo style, isolated on a pure white background. "
+        f"Do not include any intro text, just output the prompt directly."
+    )
     
     try:
-        req = urllib.request.urlopen(url, timeout=25)
+        text_api_url = f"https://text.pollinations.ai/{urllib.parse.quote(SYSTEM_PROMPT)}"
+        req_text = urllib.request.urlopen(text_api_url, timeout=20)
+        ai_prompt = req_text.read().decode('utf-8').strip()
+        
+        ai_prompt = ai_prompt.replace('"', '').replace('\n', ' ')
+        log(f"🧠 Text AI generated prompt: {ai_prompt}")
+        
+        if ai_prompt in generated_history:
+            log("⚠️ Duplicate prompt generated by AI. Skipping.")
+            continue
+
+        encoded_prompt = urllib.parse.quote(ai_prompt)
+        negative_prompt = urllib.parse.quote("woman, girl, female, vehicle, car, ugly, deformed, text, watermark, cartoon, illustration")
+        seed = random.randint(1, 999999)
+        
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&model=flux&negative_prompt={negative_prompt}&seed={seed}"
+        
+        filename = f"chunky_soldiers/soldier_{int(time.time())}_{random.randint(1000, 9999)}.jpg"
+        
+        log("📸 Generating image...")
+        req_img = urllib.request.urlopen(image_url, timeout=30)
         with open(filename, 'wb') as f:
-            f.write(req.read())
+            f.write(req_img.read())
+            
         log(f"✅ Saved: {filename}")
         
-        # Save this prompt to the history file so we never generate it again
-        generated_history.append(prompt)
+        generated_history.append(ai_prompt)
         with open(TRACKER_FILE, 'w') as f:
             json.dump(generated_history, f, indent=2)
             
     except Exception as e:
-        log(f"❌ Error on image {i+1}: {e}")
-        log("Skipping this one to avoid getting stuck...")
+        log(f"❌ Error: {e}")
+        log("Skipping this one...")
     
-    if i < len(new_prompts) - 1:
+    if i < NUM_IMAGES - 1:
         log("Waiting 30 seconds to avoid the rate limit...")
         time.sleep(30)
 
-log("Done! Run complete.")
+log("\nDone! Run complete. Your army grows.")
