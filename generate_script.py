@@ -9,7 +9,7 @@ import json
 os.makedirs("chunky_soldiers", exist_ok=True)
 TRACKER_FILE = "chunky_soldiers/generated_prompts.json"
 
-# Your master list of prompts
+#  master list of prompts
 base_prompts = [
     "funny stock photo of an extremely obese fat man in a tight green camo military uniform, hands up, isolated on white background",
     "obese fat male military general in camo uniform eating a giant donut, isolated on white background, stock photo",
