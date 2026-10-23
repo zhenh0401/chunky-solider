@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪖 Chunky Solidiers</title>
+    <style>
+        /* Comic Sans and Black Background */
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #000000;
+            color: #7CFC00; /* Bright military green */
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Top Navigation Bar */
+        .navbar {
+            background-color: #111;
+            border-bottom: 3px solid #7CFC00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+
+        .nav-links button {
+            background: none;
+            border: none;
+            color: #7CFC00;
+            font-family: inherit;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 20px;
+            transition: 0.2s;
+        }
+
+        .nav-links button:hover, .nav-links button.active {
+            color: #ffffff;
+            text-shadow: 0 0 10px #7CFC00;
+            text-decoration: underline;
+        }
+
+        /* Container for pages */
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page {
+            display: none;
+            text-align: center;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Daily Soldier Styling */
+        .daily-section img {
+            max-width: 500px;
+            width: 100%;
+            border: 5px solid #7CFC00;
+            border-radius: 10px;
+            box-shadow: 0 0 25px rgba(124, 252, 0, 0.4);
+            background-color: white;
+            margin-top: 20px;
+        }
+
+        .daily-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0;
+            color: #fff;
+        }
+
+        /* Recommended Section */
+        .recommended-section {
+            margin-top: 50px;
+            border-top: 2px dashed #333;
+            padding-top: 20px;
+        }
+
+        /* Gallery Grid for Database */
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #111;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            width: 200px;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            border-color: #7CFC00;
+            transform: scale(1.05);
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            background-color: #222; /* Placeholder color while loading */
+        }
+
+        .card p {
+            margin: 10px 0 0 0;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Loading Text */
+        .loading {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP BAR -->
+    <nav class="navbar">
+        <h1>CHUNKY SOLIDERS!</h1>
+        <div class="nav-links">
+            <button id="btn-main" class="active" onclick="showPage('main')">Main Page</button>
+            <button id="btn-db" onclick="showPage('database')">Database of Photos</button>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- MAIN PAGE -->
+        <div id="page-main" class="page active">
+            <div class="daily-section">
+                <h2 id="daily-title">Loading Today's Soldier...</h2>
+                <img id="daily-img" src="" alt="Loading...">
+            </div>
+
+            <div class="recommended-section">
+                <h3>Recently Recommended</h3>
+                <div id="recommended-gallery" class="gallery">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- DATABASE PAGE -->
+        <div id="page-database" class="page">
+            <h2>Live Database of Solidiers</h2>
+            <p style="color: #aaa;">(Auto-refreshing every 30 seconds for new drop-offs)</p>
+            <div id="database-gallery" class="gallery">
+                <div class="loading">Fetching the army... please wait.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 🚨 IMPORTANT: Your GitHub Repo Details 🚨
+        const GITHUB_REPO = "zhenh0401/chunky-solider";
+        const FOLDER_NAME = "chunky_soldiers"; 
+        
+        let allImages = [];
+        let dailySoldierUrl = "";
+
+        // --- 1. Page Navigation Logic ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('.nav-links button').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.getElementById('btn-' + (pageId === 'main' ? 'main' : 'db')).classList.add('active');
+        }
+
+        // --- 2. Fetch Images from GitHub API ---
+        async function fetchImages() {
+            try {
+                const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${FOLDER_NAME}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error("Failed to fetch images. Maybe the folder is empty?");
+                }
+
+                const data = await response.json();
+                
+                // Filter out non-image files and sort newest first
+                const images = data
+                    .filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i))
+                    .map(file => ({
+                        name: file.name,
+                        url: file.download_url
+                    }))
+                    .reverse(); // Newest images (top of the list) first
+
+                allImages = images;
+                updateUI();
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('database-gallery').innerHTML = `<div class="loading">Error: Make sure the folder "${FOLDER_NAME}" exists and the repo is public.</div>`;
+            }
+        }
+
+        // --- 3. Update the Page with the Images ---
+        function updateUI() {
+            if (allImages.length === 0) return;
+
+            // A. Set the Daily Soldier (uses date math so it stays the same all day)
+            const today = new Date();
+            const dayIndex = Math.floor(today.getTime() / (1000 * 60 * 60 * 24));
+            const dailyIndex = dayIndex % allImages.length;
+            const dailyImgObj = allImages[dailyIndex];
+            
+            document.getElementById('daily-title').innerText = dailyImgObj.name.replace('.jpg', '').replace(/_/g, ' ');
+            document.getElementById('daily-img').src = dailyImgObj.url;
+
+            // B. Populate "Recommended" (Take the 3 newest images)
+            const recommendedGallery = document.getElementById('recommended-gallery');
+            recommendedGallery.innerHTML = '';
+            
+            // Don't show the daily soldier in the recommended list if there are enough images
+            const recommendedImages = allImages.slice(0, 3); 
+            
+            recommendedImages.forEach(img => {
+                recommendedGallery.innerHTML += `
+                    <div class="card">
+                        <img src="${img.url}" class="gallery-img" loading="lazy">
+                    </div>
+                `;
+            });
+
+            // C. Populate the "Database" (Show all images)
+            const databaseGallery = document.getElementById('database-gallery');
+            databaseGallery.innerHTML = '';
+            
+            allImages.forEach(img => {
+                databaseGallery.innerHTML += `
+                    <div class="card">
+                        <img src="${img.url}" class="gallery-img" loading="lazy">
+                        <p>${img.name}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 4. The Real-Time Auto-Refresher ---
+        // Fetches the latest list from GitHub every 30 seconds
+        function startAutoRefresh() {
+            fetchImages(); // Fetch immediately on load
+            setInterval(fetchImages, 30000); // Then fetch every 30 seconds
+        }
+
+        // Start everything
+        startAutoRefresh();
+    </script>
+</body>
+</html>
