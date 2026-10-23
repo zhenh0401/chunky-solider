@@ -1,0 +1,38 @@
+name: Generate Chunky Soldiers
+# just raw code of the GitHub Actions Linux terminal usage. I need this for it to work so what do you expect lmao.
+
+on:
+  schedule:
+    # Runs every 6 hours (0 minutes, every 6th hour)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows you to manually trigger it to test
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write  
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run generation script
+        run: python generate_script.py
+
+      - name: Commit and push new images
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add chunky_soldiers/
+          git diff --staged --quiet || git commit -m "Add new chunky soldiers [skip ci]"
+          git push
+
+      - name: Keep workflow alive
+        if: github.event_name == 'schedule'
+        uses: liskin/gh-workflow-keepalive@v1
