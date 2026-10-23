@@ -2,12 +2,12 @@ import urllib.parse
 import urllib.request
 import time
 import os
-import random 
+import random
+import sys
 
 os.makedirs("chunky_soldiers", exist_ok=True)
 
-# wow very cursed prompts, I wonder if the AI is concerned.
-prompts = [
+base_prompts = [
     "funny stock photo of an extremely overweight chunky soldier in green camo, hands up, isolated on white background, photorealistic",
     "obese military general in camo uniform eating a donut, isolated on white background, stock photo style",
     "chunky soldier trying to do a push up, wearing tight camo uniform, exhausted, white background",
@@ -25,31 +25,37 @@ prompts = [
     "extremely round soldier in full camo gear, standing proudly, isolated on white background"
 ]
 
-print(f"Starting generation of {len(prompts)} images. Do not close this window!")
+# Generate 30 images per run (2x the list)
+prompts = base_prompts * 2 
+
+# Force GitHub to print logs instantly
+def log(message):
+    print(message)
+    sys.stdout.flush()
+
+log(f"Starting generation of {len(prompts)} images. Do not close this window!")
 
 for i, prompt in enumerate(prompts):
-    # encode da prompt for the URL vro
     encoded_prompt = urllib.parse.quote(prompt)
-    
-    # pollinations API 
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
     
-    # very unique filename
     filename = f"chunky_soldiers/soldier_{int(time.time())}_{random.randint(1000, 9999)}.jpg"
     
-    print(f"[{i+1}/{len(prompts)}] Fetching image...")
+    log(f"[{i+1}/{len(prompts)}] Fetching image...")
     
     try:
-        # Download the image
-        urllib.request.urlretrieve(url, filename)
-        print(f"✅ Saved: {filename}")
+        # 20-second timeout so it doesn't hang forever if the API blocks us
+        req = urllib.request.urlopen(url, timeout=20)
+        with open(filename, 'wb') as f:
+            f.write(req.read())
+        log(f"✅ Saved: {filename}")
     except Exception as e:
-        print(f"❌ Error on image {i+1}: {e}")
-        print("You might be going too fast. Waiting extra time...")
+        log(f"❌ Error on image {i+1}: {e}")
+        log("Skipping this one to avoid getting stuck...")
     
-    # Wait 45 seconds before the next one
+    # Wait 30 seconds between images
     if i < len(prompts) - 1:
-        print("Waiting 45 seconds to avoid the rate limit...\n")
-        time.sleep(45)
+        log("Waiting 30 seconds to avoid the rate limit...")
+        time.sleep(30)
 
-print("Generated 1 image(s) of 'Chunky Solider'.")
+log("Done! Run complete.")
