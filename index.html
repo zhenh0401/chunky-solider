@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🪖 Chunky Solidiers</title>
+    <title>🪖 Chunky Soldiers (! UNDER DEVELOPMENT !)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -101,17 +101,21 @@
 <body>
 
     <nav class="navbar">
-        <h1>CHUNKY SOLIDERS!</h1>
+        <h1>CHUNKY SOLDIERS!</h1>
         <div class="nav-links">
             <button id="btn-main" class="active" onclick="showPage('main')">Main Page</button>
             <button id="btn-db" onclick="showPage('database')">Database</button>
+            <button id="btn-coc" onclick="showPage('coc')">Code of Conduct (For BETA Testers)</button>
         </div>
     </nav>
 
     <div class="container">
+        <!-- Main Page -->
         <div id="page-main" class="page active">
             <div class="daily-section">
-                <h2>Chunky Solider of The Day</h2>
+                <h2>Chunky Soldier of The Day</h2>
+                <h2>! UNDER DEVELOPMENT !</h2>
+                <h2>Using AI Generated Pictures as a placeholder.</h2>
                 <img id="daily-img" src="" alt="Loading..." onclick="openLightbox(this.src, this.alt)">
                 <div id="daily-id" class="daily-id"></div>
             </div>
@@ -121,14 +125,29 @@
             </div>
         </div>
 
+        <!-- Database Page -->
         <div id="page-database" class="page">
             <h2>The Vault</h2>
+            <h3>Using AI Generated images as a placeholder.</h3>
+            <h3>Project Confidential: Any beta tester may not publicly share or abuse the images as it is only for testing purposes, nor leak confidential (secret) snapshots on this project. Any tester who fails to follow the Code of Conduct and any other rules will face disciplinary action, up to and including immediate termination of their testing session, nullification of test results, a lifetime ban from future testing, or termination of employment.</h3>
+            <h3>This site is under confidential development. You can also read more rules in the Code of Conduct Page.</h3>
             <div id="database-gallery" class="gallery">
-                <div class="loading">Fetching solidiers...</div>
+                <div class="loading">Fetching images...</div>
             </div>
+        </div>
+
+        <!-- Code of Conduct Page -->
+        <div id="page-coc" class="page">
+            <h2>Code of Conduct</h2>
+            <h3>The following rules below are disciplinary and compulsory.</h3>
+            <h3>1. Testers must not leak features of this development.</h3>
+            <h3>2. Testers must not leak snapshots of this development.</h3>
+            <h3>3. Testers must not leak placeholder images of this development.</h3>
+            <h3>4. Any exploits that damage the development or its reputation that trace back to a tester will result in disciplinary action and a lifetime ban from future testing.</h3>
         </div>
     </div>
 
+    <!-- Lightbox -->
     <div id="lightbox" onclick="closeLightbox(event)">
         <button class="close-btn" onclick="closeLightbox(event)">&times;</button>
         <img id="lightbox-img" src="" alt="">
@@ -146,7 +165,7 @@
     </div>
 
     <script>
-        // Your specific Npoint Bin ID
+        // Specific Npoint Bin ID
         const NPOINT_BIN_ID = "3e51b74f496943850281"; 
 
         const GITHUB_REPO = "zhenh0401/chunky-solider";
@@ -161,8 +180,12 @@
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.querySelectorAll('.nav-links button').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            document.getElementById('btn-' + (pageId === 'main' ? 'main' : 'db')).classList.add('active');
+            
+            const targetPage = document.getElementById('page-' + pageId);
+            const targetBtn = document.getElementById('btn-' + pageId);
+            
+            if (targetPage) targetPage.classList.add('active');
+            if (targetBtn) targetBtn.classList.add('active');
         }
 
         // --- Fetch Likes from npoint ---
@@ -178,12 +201,10 @@
 
         // --- Save Likes to npoint ---
         async function saveLikeToGithub(id) {
-            // Increment like in local memory
             likesData[id] = (likesData[id] || 0) + 1;
             updateUI(); // Instantly update UI
 
             try {
-                // Send the entire updated JSON object back to npoint
                 await fetch(LIKES_URL, {
                     method: "POST", 
                     headers: { "Content-Type": "application/json" },
@@ -311,10 +332,6 @@
                 `;
             });
         }
-
-        document.getElementById('daily-img').addEventListener('click', function() {
-            openLightbox(this.src, this.alt);
-        });
 
         // Initialize
         async function init() {
